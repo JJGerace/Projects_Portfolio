@@ -1,0 +1,18 @@
+//RPN Project for Colin Watts and Jacob Gerace
+//Comp 40 12/8/13
+//stack.ums: initializes the call and value stacks
+.zero r0
+.temps r7
+.section data
+
+.space 150000
+
+endcallstack:
+
+.space 100000
+
+endvaluestack:
+
+        .section init
+        //r2 is always the callstack pointer
+        r2:= endcallstack

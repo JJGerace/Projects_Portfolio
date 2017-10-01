@@ -1,0 +1,434 @@
+//RPN Project for Colin Watts and Jacob Gerace
+//Comp 40 12/8/13
+//calc40.ums, contains procedures for calculator operations and the input loop
+
+//Below are data structure explanations (as this file uses all of them):
+//1. call stack, at the machine level:
+//The call stack consists of 150,000 entries into the program segment. These
+//values are used to contain to hold values temporarily, almost always to hold
+//return address before a function call, or to hold a parameter to a function.
+
+//In actual usage, a value will be pushed onto the stack to save it (by push,
+//we mean that the value is put into the location pointed to by the value stack
+//pointer, and then the value stack pointer is decremented), and then popped
+//off the stack later to use it.
+
+//r2 is used as the pointer to the call stack. It starts out at the end of the
+//call stack (150,000)
+
+//2. value stack
+//The value stack is created and represented identically to the call stack,
+//with the exception that it only holds 100,000 entries in the program segment
+//(which come after the 150,000 entries for the call stack). It hold the values
+//contained in the RPN calculator only
+
+//r3 is used as the pointer to the value stack. It starts out at the end of the
+//value stack (100,000)
+
+//3. Jumptable
+//The jumptable is an array of function pointers, where function
+//pointers are the address of a procedure in the calc40.ums file such that
+//jumptable[asciicharacter] will yield the function to be executed when that
+//character will be entered
+//On the machine level, it is implemented by making 256 entries in the program
+//segment, and setting them to the relevant labels (which are function
+//pointers)
+//The jump table allows for a computed goto in the main loop
+
+.temps r7
+.zero  r0
+
+.section text
+//Calling conventions (unless otherwise noted)
+//r0 is 0
+//r1 is the return address before a function is called, and the return value
+//otherwise
+//r2 is the call stack pointer
+//r3 is the value stack pointer
+//r4 is the non volatile register
+//r5-r7 are volatile registers
+
+
+//main procedure: saves some relevant values, calls the input loop, then
+//returns
+//Takes in no parameters, doesn't return any values
+//follows calling conventions
+main:
+        //register r3 is a the pointer to the value stack. Please
+        //do not overwrite
+        push r1 on stack r2         //hold return address
+        push r4 on stack r2         //save non-volatile
+
+        goto inputloop linking r1   //enter input loop
+
+        pop r4 off stack r2         //restore non volatile
+        pop r5 off stack r2         //find return address
+        goto r5                     //return to that address
+
+//input procedure, contract:
+//Inputs a value in a loop and calls the relevant calculator function for that
+//value. Will stop when 'EOF' is entered
+//Takes in no parameters, doesn't return any values
+//follows calling conventions
+inputloop:
+        push r1 on stack r2         //save return address
+        push r3 on stack r2
+        push r4 on stack r2
+        r3 := endvaluestack
+
+        push r0 on stack r2         //bool entering = false
+
+        //waiting block, reads in characters until EOF
+        waiting:
+                r5 := input()
+                //test for EOF, if so go to end of procedure
+                r1 := r5 nand r5
+                if (r1 == 0) goto endinputloop using r4, r6, r7
+
+        // branch indirect through jump table
+        r4 := jumptable + r5
+        r4 := m[r0][r4]
+        if (r4 == input_n) goto num_func_call using r1, r6, r7
+        if (r4 == input_error) goto error_message using r1, r6, r7
+        pop stack r2                //get rid of the old bool value
+        push r0 on stack r2         //set boolean to false
+        goto r4
+
+        //num_func_call, contract:
+        //converts the input to decimal and sets up the function call to
+        //input_n, changes the "entering" boolean to true
+        num_func_call:
+                r5 := r5 - '0' using r6     //convert to decimal
+                push r5 on stack r2         //r5 is the input, argument 1
+                goto r4 linking r1          //call input num, argument 2 is
+                                            //the bool
+                r1 := 1                     //1 means true
+                push r1 on stack r2         //update entering bool
+                goto waiting
+
+        //error message, contract:
+        //outputs the specified error message with the ascii representation of
+        //the inputted character.
+        //special case because the inputted character is needed
+        error_message:
+                output "Unknown character '"
+                output r5
+                output "'\n"
+                goto waiting
+
+        endinputloop:
+
+        pop stack r2                //delete the entering bool
+        pop r4 off stack r2
+        pop r3 off stack r2
+        pop r5 off stack r2         //get return address
+        goto r5                     //return to that address
+
+//input_n procedure, contract:
+//adds the given value to the value stack if in waiting
+//appends the given value to the last entered value to the value stack if in
+//entering
+//Takes in the inputted value (in decimal), and the "entering" bool
+//Returns no values
+input_n:
+.temps r7
+        pop r5 off stack r2         //r5 is value
+        pop r6 off stack r2         //get entering bool
+        push r1 on stack r2         //save r1
+        push r4 on stack r2         //save r4
+
+        if (r6 == 0) goto finish using r1, r4, r7
+                pop r1 off stack r3 //get previous value
+                r1 := r1 * 10       //new val = old val * 10 + new val
+                r5 := r5 + r1
+
+        finish:
+        push r5 on stack r3         //push value on value stack
+        pop r4 off stack r2         //restore r4
+        pop r1 off stack r2         //restore r1
+
+        goto r1
+
+//input_space, contract:
+//transitions to waiting
+//Takes no parameters
+//Returns no values
+input_space:
+        goto waiting
+
+//input_newline, contract:
+//calls print from print module
+//Takes no parameters
+//Returns no values
+input_newline:
+        goto print linking r1
+        goto waiting
+
+//input_add, contract:
+//requires at least two values to be on stack
+//adds the top two values on stack together and pushes the result
+//Takes no parameters
+//Returns no values
+input_add:
+        goto check_stack_two linking r1
+        pop r5 off stack r3         //pop y
+        pop r1 off stack r3         //pop x
+        r1 := r1 + r5               //x = x + y
+        push r1 on stack r3         //push x + y
+        goto waiting
+
+//input_sub, contract:
+//requires at least two values to be on stack
+//subtracts the top value on stack from the value below and pushes the result
+//Takes no parameters
+//Returns no values
+input_sub:
+        goto check_stack_two linking r1
+        pop r5 off stack r3         //pop y
+        pop r1 off stack r3         //pop x
+        r1 := r1 - r5               //x = x - y
+        push r1 on stack r3         //push x - y
+        goto waiting
+
+//input_mult, contract:
+//requires at least two values to be on stack
+//multiplies the top two values on stack together and pushes the result
+//Takes no parameters
+//Returns no values
+input_mult:
+        goto check_stack_two linking r1
+        pop r5 off stack r3         //pop y
+        pop r1 off stack r3         //pop x
+        r1 := r1 * r5               //x = x * y
+        push r1 on stack r3         //push x * y
+        goto waiting
+
+//division procedure, contract
+//pops y and x from the value stack, then pushes y/x on the value stack
+//Takes no parameters
+//Returns no values
+//In this procedure, r5 is y and r1 is x unless otherwise stated.
+//r4 is used to contain the number of negative numbers inputted (0, 1, or 2)
+//r3 is saved onto the call stack and later restored, it is needed as a /
+//temporary
+//register
+input_div:
+        goto check_stack_two linking r1
+        push r4 on stack r2         //save r4
+
+        pop r5 off stack r3         //pop y
+        if (r5 == 0) goto div_by_zero using r1, r6, r7  //checks if division by
+                                                        //zero is happening
+
+        r4 := 0                     //integer if there is signed division
+
+        pop r1 off stack r3         //pop x
+
+        push r3 on stack r2         //save r3
+
+        //this is some funky program flow here
+        //check y jumps to negate y if y is negative
+        //check y then finds the negation of y (so that it is now positive) and
+        //then increments the conter of nugative numbers and jumps to check x
+        //check x does the same thing as check y but negates x if it is
+        //negative. The counter is then incremented again
+        //if neither are negative the program jumps directly to division
+        check_y:
+        if (r5 <s 0) goto negate_y using r3, r6, r7  //if y is negative,
+                                                     //negate it
+        check_x:
+        if (r1 <s 0) goto negate_x using r3, r6, r7
+        goto divide
+
+        negate_y:
+                r5 := -r5
+                r4 := 1
+                goto check_x
+        negate_x:
+                r1 := -r1
+                r4 := r4 + 1
+
+        //this assumes that both numbers that are beign divided are positive
+        //does integer division for x / y
+        //if exactally one of the arguments in the division is negation then
+        //the result is negative as well.
+        //Otherwise the result is positive
+        //end result is pushed back onto the value stack
+        divide:
+                r1 := r1 / r5               //x = x / y
+                if (r4 != 1) goto next using r5, r6, r7      //invert sign if
+                                                             //necessary
+                        r1 := -r1
+                next:
+                pop r3 off stack r2         //restore r3
+                push r1 on stack r3         //push x / y
+                pop r4 off stack r2
+                goto waiting
+
+        //Error for division by zero
+        div_by_zero:
+        push r5 on stack r3
+        output "Division by zero\n"
+
+        pop r4 off stack r2
+        goto waiting
+
+//input_bar, contract:
+//requires at least two values to be on stack
+//finds the binary or of the top two values on stack together and pushes the
+// result
+//Takes no parameters
+//Returns no values
+input_bar:
+        goto check_stack_two linking r1
+        pop r5 off stack r3         //pop y
+        pop r1 off stack r3         //pop x
+        r1 := r1 | r5               //x = x | y
+        push r1 on stack r3         //push x | y
+        goto waiting
+
+//input_and, contract:
+//requires at least two values to be on stack
+//finds the binary and of the top two values on stack together and pushes the
+//result
+//Takes no parameters
+//Returns no values
+input_and:
+        goto check_stack_two linking r1
+        pop r5 off stack r3         //pop y
+        pop r1 off stack r3         //pop x
+        r1 := r1 & r5               //x = x & y
+        push r1 on stack r3         //push x & y
+        goto waiting
+
+//input_c, contract:
+//requires at least one value to be on stack
+//finds the negation of the top value on stack together and pushes the result
+//Takes no parameters
+//Returns no values
+input_c:
+        goto check_stack_one linking r1
+        pop r5 off stack r3
+        r5 := -r5
+        push r5 on stack r3
+        goto waiting
+
+//input_tilde, contract:
+//requires at least one value to be on stack
+//finds the compliment of the top value on stack together and pushes the result
+//Takes no parameters
+//Returns no values
+input_tilde:
+        goto check_stack_one linking r1
+        pop r5 off stack r3         //pop x
+        r5 := ~r5                   //x = ~x
+        push r5 on stack r3         //push ~x
+        goto waiting
+
+//input_s, contract:
+//requires at least two values to be on stack
+//switches the order of the top two values on the stack
+//Takes no parameters
+//Returns no values
+input_s:
+        goto check_stack_two linking r1
+        pop r5 off stack r3        //pop x
+        pop r1 off stack r3        //pop y
+        push r5 on stack r3        //push x
+        push r1 on stack r3        //push y
+        goto waiting
+
+//input_d, contract:
+//requires at least one value to be on stack
+//duplicates the top value on the stack
+//Takes no parameters
+//Returns no values
+input_d:
+        goto check_stack_one linking r1
+        pop r5 off stack r3
+        push r5 on stack r3
+        push r5 on stack r3
+        goto waiting
+
+//input_s, contract:
+//requires at least one value to be on stack
+//pops the top value off the stack
+//Takes no parameters
+//Returns no values
+input_p:
+        goto check_stack_one linking r1
+        pop stack r3
+        goto waiting
+
+//input_z, contract
+//removes all valuse currently on the stack
+//Takes no parameters
+//Returns no values
+input_z:
+        delete_loop_body:
+                //While (!Stack.isEmpty())
+                if (r3 == endvaluestack) goto end_delete_loop using r5, r6, r7
+                pop stack r3
+                goto delete_loop_body
+
+        end_delete_loop:
+
+        goto waiting
+
+//check_stack_two, contract
+//ensures that there are at least two values on the value stack
+//if there are not enough values, prints an error and returns to waiting state
+//Takes no parameters
+//Returns no values
+//In this procedure, r1 contains the minimum value the value stack pointer can
+//have
+//such that there are 2 or more things on the stack
+
+check_stack_two:
+
+        push r1 on stack r2                 //saves return address
+
+        r1 := endvaluestack - 2             //minimum stack pointer value
+
+        if (r3 >s r1) goto error_stack_two using r5, r6, r7
+
+        pop r5 off stack r2                 //return
+        goto r5
+
+        error_stack_two:                    //returns and transitions to
+                                            //waiting
+                pop stack r2
+                output "Stack underflow---expected at least 2 elements\n"
+                goto waiting
+
+//check_stack_one, contract
+//ensures that there is at least one value on the value stack
+//if there are not enough values, prints an error and returns to waiting state
+//Takes no parameters
+//Returns no values
+//In this procedure, r1 contains the minimum value the value stack pointer can
+//have
+//such that there is 1 or more things on the stack
+
+check_stack_one:
+
+        push r1 on stack r2                   //saves return address
+
+        r1 := endvaluestack - 1               //minimum stack pointer value
+
+        if (r3 >s r1) goto error_stack_one using r5, r6, r7
+
+        pop r5 off stack r2                    //return
+        goto r5
+
+        error_stack_one:
+                pop stack r2                    //returns and transitions to
+                                                //waiting
+                output "Stack underflow---expected at least 1 element\n"
+                goto waiting
+
+//used to assign things in the jump table to, and still needed for comparisons
+//actual error output handled by input loop
+input_error:
+
+

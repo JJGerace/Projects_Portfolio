@@ -1,0 +1,92 @@
+//RPN Project for Colin Watts and Jacob Gerace
+//Comp 40 12/8/13
+//print related functions for entire stack and single numbers
+.zero r0
+.temps r7
+
+
+//print procedure: Recursively traverses the sack and prints each number
+//No arguments are passed.
+//No values are returned
+//r1 is only used for return adress
+//r4 holds the current value being printed
+//r5-r7 are temporary
+//contract: calls recursive_print_number on every value in the value stack
+//      then returns
+print:                              //print values in r3
+
+push r1 on stack r2
+push r4 on stack r2
+
+//if stack is empty return
+if (r3 == endvaluestack) goto finishprint using r5, r6, r7
+
+        output ">>> "
+        pop r4 off stack r3         //get top value from value stack
+
+        if(r4 <s r0) goto print_negative_val using r5, r6, r7 //check for neg
+
+        print_positive_val:         //contract: prints value assuming positive
+                                    //number
+        push r4 on stack r2         //pass the entire number as parameter
+        goto recursive_print_number linking r1 //call to print number
+        goto finish_print_body
+
+        print_negative_val:        //contract: prints value assuming number is
+                                   //negative
+        output '-'
+        r5 := -r4
+        push r5 on stack r2
+        goto recursive_print_number linking r1 //call to print number
+
+        finish_print_body:          //negative and positive printing continue
+                                    //from this point
+        output '\n'
+        goto print linking r1       //recursive call with simplified stack
+        push r4 on stack r3
+
+
+finishprint:
+pop r4 off stack r2                 //restore original value of r4
+pop r5 off stack r2                 //restore return adress
+goto r5
+
+
+
+//recursive_print_number procedure: recursively prints a single value in ascii
+//      representation
+//takes in an integer which has the value to be printed
+//integer is on the call stack and is assumed to be positive
+//no vales are returned
+//r4 is non volitile and must be saved
+//r1 is used as return adress and serves other functions as stated
+//r5 is used as an unsigned representation of the value to be printed
+recursive_print_number:
+        pop r5 off stack r2         //get value to print
+
+        push r1 on stack r2         //save return address
+        push r4 on stack r2         //save r4
+
+        if (r5 <s 10) goto print_one_digit using r1, r6, r7
+                r1 := r5            //r1 is a copy of the entire number
+                r5 := r5 / 10       //get rid of the lsd in r5
+                r4 := r5 * 10       //r4 is now the entire number without the
+                                    //lsd
+                r1 := r1 - r4       //put the single digit "popped of" in r1
+                r4 := r1 + '0'      //convert decimal to ascii
+
+                push r5 on stack r2 //pass simplified value as parameter
+                goto recursive_print_number linking r1 //recursive call
+                output r4
+                goto finish_function
+
+        print_one_digit:            //base case
+                r5 := r5 + '0'
+                output r5
+
+        finish_function:
+        pop r4 off stack r2         //get return address
+        pop r5 off stack r2         //restore r4
+        goto r5
+
+

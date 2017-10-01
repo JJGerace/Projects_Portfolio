@@ -1,0 +1,62 @@
+Compress40
+
+This program accepts an uncompressed image in pnm format, and compresses it to a binary file 
+via a discrete cosine transformation (JPEG algorithm). It can also decompress a compressed
+image from a binary file back to a pnm file.
+
+This project is written in and shows my knowledge of C. It also demonstrates my ability to 
+implement complicated algorithms in a low level language.
+
+
+by Taher Mun and Jacob Gerace
+
+Acknowledgements:
+We recieved help from numerous people, including, but not limited to, Noah
+Mendelsohn, Patrick, Sarah and Victor (who helped us with printing out the
+image in the correct format) , Raewyn (who gave us tremendous advice about
+bitpack) , and others who we may have forgotten about.
+
+What has been implemented correctly:
+Bitpack
+Compressing the Image
+Decompressing the Image
+
+Solution Architecture:
+The architecture of our solution consists of many subparts. Overall, we are
+compressing and decompressing an image using a a compress40 module, pixels
+module, a type conversion module and a bitpack module. The pixel module
+includes functions that deals with pixel conversions between rgb and component,
+discrete cosine transforming to and from component, and packing/extracting
+discrete cosine transformed pixels into/from bitpacked words. The type_manip
+module assists in converting double types to ints of certain bit sizes. The
+bitpack module allows a client to pack and extract integers into 64-bit integer
+"words". The compress40 module includes functions that assist with compressing
+and decompressing the image. This module implements the blocked unboxed array
+that is accessed through the A2Methods interface.
+
+To compress a pnm image, we first trim the image to be of an even height and
+width. Then we go through each pixel in the image in block major order and
+transform each pixel from rgb to component, putting the component values into a
+new a2methods array of the same width and height of the original image. Then we
+go through this new, component-filled array and run a discrete cosine transform
+function on each 2x2 block of the component array. The values from each block
+are put into another 2d array of half the width and half the height of the
+original image. This image is iterated through in row-major order and for each
+cell in the array, all the discrete cosine transform values are packed into
+32-bit codewords through the bitpack module, and then these codewords are
+printed out in the COMP40 compressed image format. Thus, we obtain a compressed
+image.
+
+To decompress an image in the COMP40 compressed image format, we basically do
+the reverse of compression. Each word is read in from the format, and the
+discrete cosine transform values are extracted from the each word. Then we do a
+reverse discrete cosine transform on these values to obtain 4 component values,
+which we put into an array that is twice the height and width of the read-in
+image. Then, we go through this component array in block-major order, transform
+each component value into rgb, and then write out the completed array into a
+pnm and output the pnm. The outputted image is near identical to the original
+image.
+
+We spent about 15 hours analyzing the problems posed in the assignment
+We spent about 10 hours solving the problems after our analysis
+

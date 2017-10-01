@@ -1,0 +1,12 @@
+//RPN Project for Colin Watts and Jacob Gerace
+//Comp 40 12/8/13
+//callmain.ums, sets up the call to main
+.zero r0
+.temps r7
+
+.section init
+
+        //convention of r1 containing the return address
+        goto main linking r1
+        halt
+

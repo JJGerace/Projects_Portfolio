@@ -1,0 +1,83 @@
+//RPN Project for Colin Watts and Jacob Gerace
+//Comp 40 12/8/13
+//initjumptable.ums, initializes the jump table for implementation of a
+//switch statement in calc40.ums
+
+//This contains no procedure, so calling conventions are not relevant,
+//all registers used (save r0 and r2) are used as temporary registers.
+//Note that this includes r3 which is otherwise the value stack pointer
+//r3 is not initiialized until after this file ends
+
+.temps r7
+.zero  r0
+
+.section init
+
+jumptable:
+.space 256                          //256 possible ascii values
+
+r5 := 0                             //for (int i = 0; i != 256; i++)
+goto initerrorlooptest
+
+initerrorloopbody:
+        r1 := jumptable + r5        //jumptable[i] = input_error()
+        m[r0][r1] := input_error
+        r5 := r5 + 1
+initerrorlooptest:
+if (r5 != 256) goto initerrorloopbody using r3, r6, r7
+
+//48 is ASCII 0
+r5 := 48                             //for (int i = 48; i != 58; i++)
+goto initnlooptest
+
+initnloopbody:
+        r1 := jumptable + r5        //jumptable[i] = input_n()
+        m[r0][r1] := input_n
+        r5 := r5 + 1
+initnlooptest:
+//57 is ASCII 9
+if (r5 != 58) goto initnloopbody using r3, r6, r7
+
+r1 := jumptable + 32                //space
+m[r0][r1] := input_space
+
+r1 := jumptable + 10                //newline
+m[r0][r1] := input_newline
+
+r1 := jumptable + 43                //'+'
+m[r0][r1] := input_add
+
+r1 := jumptable + 45                //'-'
+m[r0][r1] := input_sub
+
+r1 := jumptable + 42                //'*'
+m[r0][r1] := input_mult
+
+r1 := jumptable + 47                //'/'
+m[r0][r1] := input_div
+
+r1 := jumptable + 124                //'|'
+m[r0][r1] := input_bar
+
+r1 := jumptable + 38                //'&'
+m[r0][r1] := input_and
+
+r1 := jumptable + 99                //'c'
+m[r0][r1] := input_c
+
+r1 := jumptable + 126                //'~'
+m[r0][r1] := input_tilde
+
+r1 := jumptable + 115                //'s'
+m[r0][r1] := input_s
+
+r1 := jumptable + 100                //'d'
+m[r0][r1] := input_d
+
+r1 := jumptable + 112                //'p'
+m[r0][r1] := input_p
+
+r1 := jumptable + 122                //'z'
+m[r0][r1] := input_z
+
+

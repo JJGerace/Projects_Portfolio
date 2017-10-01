@@ -1,0 +1,59 @@
+This project is written in, and demonstrates my knowledge of C++.
+
+This project is a DNA assembler, which takes DNA sequence reads and assembles them into longer contigs.
+All DNA sequencing techniques contain errors, start at a random base pair, and only go on for a few hundred
+base pairs. This program meshes those sequence reads together, ignores errors, and outputs them as longer
+contigs using the De Bruin Graph algorithm.
+
+My project contains the following files:
+README
+good_reads
+output_contigs
+contig_lengths
+main.cpp
+De_Bruijn.cpp
+De_Bruijn.h
+makefile
+
+My project can be compiled by simply typing
+make
+
+The project accepts a list of sequence reads from either a file specified
+on the command line (preferred) or on standard input. I have been mostly
+using the former input method, so I suggest using that.
+
+In other words, you can run it with:
+./assembler <your_sequence_read_here>
+
+With the relevant file as the second command line argument. My submitted
+files contain the relevant output from the provided sequence_reads
+
+It produces (or overwrites, so be careful) the following three files
+output_contigs
+contig_lengths
+good_reads
+
+Output_contigs contains the outputted scaffold contigs from the program.
+
+contig_lengths contains a parallel output of the length of each contigs
+(there is commented out alternative code in the project that will print
+out in sorted largest to shortest lengths for contig_lengths, as well
+as a way to automatically calculate n50. These are disabled by default)
+
+good_reads contains the valid entered DNA fragments, it is in the same
+order as the inputted sequences, minus the invalid ones.
+
+Other notes:
+-My program shouldn't segfault if a sequence is provided that is smaller
+than the provided kmer size (31 by default), but will simply ignore the
+sequece in question. I haven't tested this extensively though.
+-My written answers will be submitted in person in class
+-I use !.cin.eof() to find the last submitted line. This has a (known) bug
+where the last line is inputted twice. I compensate for this by ignoring the
+last sequence in my array, but this means that one line sequence
+submissions are invalid. I find this acceptable because it is useless to
+assemble anything based on one sequence anyway.
+-on sequence_reads, my project takes on the order of 1 minute to run
+-I collaborated with Taher Mun on conceptual details for this assignment
+
+

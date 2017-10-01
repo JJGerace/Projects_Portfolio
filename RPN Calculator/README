@@ -1,0 +1,40 @@
+README
+
+This project was written in a simplified assembly language, which runs on a C emulated universal machine.
+This implements a Reverse Polish Notation command line calculator.
+It reflects my ability to work with low level languages.
+
+Compile With: ./umasm stack.ums initjumptable.ums calc40.ums print.ums callmain.ums > calc40.um
+Run With: ./um calc40.um < input.txt
+
+
+By: Jacob Gerace and Colin Watts
+
+Help recieved:
+        We recieved help from our fellow comp 40 students in the descussion
+        of implementation of the RPN Calculator
+
+What has been correctly implemented:
+        All commands have been correctly implemented
+        Printing has been correctly implemented
+        Input has been correctly implemented
+        jump table has been correctly implemented
+
+Departures from calling convention:
+        r3 is used as a stack pointer for the value stack in most cases.
+        There are three cases where this convention is broken. r3 si used as
+        a temporary register twice when initializing the jump table and then
+        once division. This convention is maintained in all other cases.
+
+Our implementation of the print module:
+        Our print module does a recursive traversal of our value stack
+        and then calls a recursive print for each value in the stack.
+
+Time spent analyzing:
+        6 hours
+
+Time spent writing:
+        6 hours
+
+Time spend debugging:
+        3 hours
