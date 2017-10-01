@@ -7,6 +7,8 @@ It reflects my ability to work with low level languages.
 Compile With: ./umasm stack.ums initjumptable.ums calc40.ums print.ums callmain.ums > calc40.um
 Run With: ./um calc40.um < input.txt
 
+The main program logic is in calc40.ums .
+
 
 By: Jacob Gerace and Colin Watts
 
