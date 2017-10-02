@@ -1,0 +1,5 @@
+This file represents the major share of my contributions to the open source Monte Carlo code Cassandra to date. 
+It contains a new move which switches the identity of two molecules, which may help sample dense phase equilibria like 
+liquid=liquid equilibria.
+
+The rest of the codebase can be found at https://cassandra.nd.edu/index.php/download .
